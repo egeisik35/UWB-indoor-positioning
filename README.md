@@ -27,12 +27,9 @@ Firmware setup is being done using the [DWM3001CDK-demo-firmware](https://github
 
 ### 1. Build the Firmware
 
-First, pull the Docker image and clone the firmware repository.
+First, clone the firmware repository.
 
 ```bash
-# Pull the pre-configured Docker image
-docker pull uberi/qorvo-nrf52833-board
-
 # Clone the official demo firmware
 git clone [https://github.com/Uberi/DWM3001CDK-demo-firmware](https://github.com/Uberi/DWM3001CDK-demo-firmware)
 cd DWM3001CDK-demo-firmware
