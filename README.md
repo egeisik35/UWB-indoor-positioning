@@ -23,7 +23,7 @@ The system uses one module as a mobile **initiator** (the "tag" to be tracked) a
 
 ## Firmware Setup
 
-This project uses the official [DWM3001CDK-demo-firmware](https://github.com/Uberi/DWM3001CDK-demo-firmware) from Qorvo. The recommended setup uses Docker to ensure a consistent and easy build environment.
+Firmware setup is being done using the [DWM3001CDK-demo-firmware](https://github.com/Uberi/DWM3001CDK-demo-firmware) from Uberi. The recommended setup uses Docker to ensure a consistent and easy build environment.
 
 ### 1. Build the Firmware
 
