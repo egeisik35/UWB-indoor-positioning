@@ -1,3 +1,4 @@
 pyserial
 numpy
 filterpy
+matplotlib
