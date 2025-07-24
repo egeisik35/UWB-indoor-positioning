@@ -7,7 +7,6 @@ A real-time indoor positioning system using **Qorvo DWM3001C Ultra-Wideband (UWB
 The system uses one module as a mobile **initiator** (the "tag" to be tracked) and multiple modules as fixed **responders** (the "anchors"). By measuring the distances between the tag and anchors, we can estimate the tag's position in real-time. The data is then processed using Python for filtering, tracking, and visualization.
 
 
-
 ---
 
 ## Key Features
@@ -108,15 +107,28 @@ The scripts can be easily modified to change filtering techniques, log data, or 
 
 ---
 
+### 3. Live 3D Visualization
+
+To visualize the responder’s position in real time:
+
+```bash
+python uwb-python-analysis/plot_3D_live.py
+```
+
+This script reads the filtered distance data (`latest_distance.txt`) and updates a 3D room model every second. It assumes one anchor at (0, 0, 0) and draws a red sphere indicating possible responder locations.
+
+If you're using SSH, enable X11 forwarding (`ssh -X`) or modify the script to save snapshots instead of opening a window.
+
+---
+
 ## Project Status & Roadmap
 
 This project is actively in development. The current focus is on building a complete, room-scale indoor localization system for real-world robotics applications.
 
 Our roadmap includes:
 
--   [ ] Integrate 5 or more UWB responders for improved coverage and accuracy.
--   [ ] Implement real-time 2D/3D trilateration algorithms.
--   [ ] Replace the single-axis Kalman filter with a multi-dimensional state-space tracker (position & velocity in X/Y/Z).
+-   [ ] Integrate total of 3 UWB responders and 1 initiator for improved coverage and accuracy.
+-   [ ] Implement real-time 3D trilateration algorithms.
 -   [ ] Fuse UWB data with an IMU for drift correction during fast movements.
 -   [ ] Visualize the tracked path in real-time (e.g., with Matplotlib, OpenCV, or ROS).
 -   [ ] Validate system accuracy with a physical robot performing a pre-defined course.
