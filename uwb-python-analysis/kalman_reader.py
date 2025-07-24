@@ -115,6 +115,9 @@ if __name__ == "__main__":
                         kf.update(np.array([[dist]]))
 
                         filtered_dist = kf.x[0, 0]
+                        with open("latest_distance.txt", "w") as f:
+                            f.write(str(filtered_dist))
+
                         velocity = kf.x[1, 0] # in cm/s
                         
                         display_lines.append(f"[{addr}] Dist: {filtered_dist:.1f} cm (V: {velocity:.1f} cm/s)")
