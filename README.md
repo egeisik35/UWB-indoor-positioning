@@ -109,7 +109,7 @@ The scripts can be easily modified to change filtering techniques, log data, or 
 
 ### 3. Live 3D Visualization
 
-To visualize the responder’s position in real time:
+To visualize the responder’s position in real time, first run the kalman_reader.py and then:
 
 ```bash
 python uwb-python-analysis/plot_3D_live.py
