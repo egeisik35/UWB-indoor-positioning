@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import socket
 import json
 import time
 
@@ -15,39 +16,20 @@ responder_positions = {
     "0x0003": [6850, 4400, 1200]
 }
 
-def get_all_distances():
-    try:
-        with open("latest_distances.json", "r") as f:
-            return json.load(f)
-    except:
-        return {}
-
-def trilaterate(p1, r1, p2, r2, p3, r3):
-    P1 = np.array(p1)
-    P2 = np.array(p2)
-    P3 = np.array(p3)
-
-    ex = (P2 - P1) / np.linalg.norm(P2 - P1)
-    i = np.dot(ex, P3 - P1)
-    ey = P3 - P1 - i * ex
-    ey = ey / np.linalg.norm(ey)
-    ez = np.cross(ex, ey)
-    d = np.linalg.norm(P2 - P1)
-    j = np.dot(ey, P3 - P1)
-
-    x = (r1**2 - r2**2 + d**2) / (2 * d)
-    y = (r1**2 - r3**2 + i**2 + j**2 - 2 * i * x) / (2 * j)
-    try:
-        z = np.sqrt(abs(r1**2 - x**2 - y**2))
-    except:
-        z = 0
-
-    return P1 + x * ex + y * ey + z * ez
+# UDP setup
+UDP_IP = "0.0.0.0"
+UDP_PORT = 5005
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind((UDP_IP, UDP_PORT))
+sock.settimeout(1.0)
 
 # === Plot Setup ===
 fig = plt.figure(figsize=(10, 5))
 ax_xy = fig.add_subplot(1, 2, 1)
 ax_z = fig.add_subplot(1, 20, 20)
+
+last_position = None
+last_update = time.time()
 
 def update_plot(est):
     ax_xy.clear()
@@ -75,29 +57,26 @@ def update_plot(est):
     ax_z.set_title("Z height (mm)")
     ax_z.text(0.5, est[2] + 100, f"{int(est[2])} mm", ha='center', fontsize=9)
 
-    plt.pause(0.5)
+    plt.pause(0.05)
 
 # === Main Loop ===
 try:
     while True:
-        distances = get_all_distances()
-
-        if all(k in distances for k in responder_positions):
-            d1 = distances["0x0001"] * 10
-            d2 = distances["0x0002"] * 10
-            d3 = distances["0x0003"] * 10
-
-            est = trilaterate(
-                responder_positions["0x0001"], d1,
-                responder_positions["0x0002"], d2,
-                responder_positions["0x0003"], d3
-            )
-
-            print(f"Estimated Position: x={est[0]:.1f}, y={est[1]:.1f}, z={est[2]:.1f} mm")
+        try:
+            data, addr = sock.recvfrom(1024)
+            position = json.loads(data.decode())
+            est = [position['x'], position['y'], position['z']]
+            last_position = est
+            last_update = time.time()
+            print(f"Received position: x={est[0]:.1f}, y={est[1]:.1f}, z={est[2]:.1f} mm")
             update_plot(est)
-        else:
-            print("Waiting for all 3 distances...")
-
+        except socket.timeout:
+            # If no new data, re-plot last position for smoothness
+            if last_position is not None and time.time() - last_update < 2.0:
+                update_plot(last_position)
+            else:
+                print("Waiting for position data...")
+                time.sleep(0.05)
 except KeyboardInterrupt:
     print("Stopped.")
 

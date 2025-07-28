@@ -98,6 +98,6 @@ try:
     while True:
         distances = get_all_distances()
         draw_scene(ax, distances)
-        plt.pause(1.0)
+        plt.pause(0.05)
 except KeyboardInterrupt:
     print("Stopped.")

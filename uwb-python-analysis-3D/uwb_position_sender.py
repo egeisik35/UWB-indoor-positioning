@@ -1,4 +1,3 @@
-
 import serial
 import json
 import sys
@@ -7,6 +6,19 @@ import numpy as np
 import serial.tools.list_ports
 from filterpy.kalman import KalmanFilter
 from filterpy.common import Q_discrete_white_noise
+import socket
+
+# UDP setup
+UDP_IP = "MAIN_COMPUTER_IP"  # <-- CHANGE THIS
+UDP_PORT = 5005
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+# Room anchor positions (update as needed)
+responder_positions = {
+    "0x0001": [3000, 0, 1200],
+    "0x0002": [0, 4000, 1050],
+    "0x0003": [6850, 4400, 1200]
+}
 
 BAUD_RATE = 115200
 INITIAL_DT = 0.1
@@ -29,6 +41,25 @@ def create_kalman_filter():
     kf.R = np.array([[MEASUREMENT_NOISE]])
     kf.Q = Q_discrete_white_noise(dim=2, dt=INITIAL_DT, var=PROCESS_NOISE)
     return kf
+
+def trilaterate(p1, r1, p2, r2, p3, r3):
+    P1 = np.array(p1)
+    P2 = np.array(p2)
+    P3 = np.array(p3)
+    ex = (P2 - P1) / np.linalg.norm(P2 - P1)
+    i = np.dot(ex, P3 - P1)
+    ey = P3 - P1 - i * ex
+    ey = ey / np.linalg.norm(ey)
+    ez = np.cross(ex, ey)
+    d = np.linalg.norm(P2 - P1)
+    j = np.dot(ey, P3 - P1)
+    x = (r1**2 - r2**2 + d**2) / (2 * d)
+    y = (r1**2 - r3**2 + i**2 + j**2 - 2 * i * x) / (2 * j)
+    try:
+        z = np.sqrt(abs(r1**2 - x**2 - y**2))
+    except:
+        z = 0
+    return P1 + x * ex + y * ey + z * ez
 
 if __name__ == "__main__":
     PORT = find_serial_port()
@@ -81,23 +112,24 @@ if __name__ == "__main__":
                         filtered_dist = kf.x[0, 0]
                         all_distances[addr] = filtered_dist
 
-                    if all_distances:
-                        with open("latest_distances.json", "w") as f:
-                            json.dump(all_distances, f)
+                    # Only send if all distances are available
+                    if all(k in all_distances for k in responder_positions):
+                        d1 = all_distances["0x0001"] * 10
+                        d2 = all_distances["0x0002"] * 10
+                        d3 = all_distances["0x0003"] * 10
 
-                        sys.stdout.write("\r" + " | ".join(
-                            [f"[{addr}] {d:.1f} cm" for addr, d in all_distances.items()]
-                        ) + " " * 10)
-                        sys.stdout.flush()
+                        est = trilaterate(
+                            responder_positions["0x0001"], d1,
+                            responder_positions["0x0002"], d2,
+                            responder_positions["0x0003"], d3
+                        )
 
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    continue
+                        position = {"x": float(est[0]), "y": float(est[1]), "z": float(est[2])}
+                        sock.sendto(json.dumps(position).encode(), (UDP_IP, UDP_PORT))
+                        print("Sent position:", position)
+
                 except Exception as e:
-                    print(f"\nError: {e}")
-
-    except serial.SerialException as e:
-        print(f"Serial Error: {e}")
+                    print("Error in loop:", e)
+                    time.sleep(0.1)
     except KeyboardInterrupt:
-        print("\nStopped.")
-    finally:
-        sys.exit(0)
+        print("Stopped.") 
