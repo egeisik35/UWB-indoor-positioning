@@ -12,8 +12,8 @@ room_height = 3200
 # Anchor positions (exactly as in 3D)
 responder_positions = {
     "0x0001": [3000, 0, 1200],
-    "0x0002": [0, 4000, 1050],
-    "0x0003": [6850, 4400, 1200]
+    "0x0002": [0, 4000, 1680],
+    "0x0003": [6450, 4400, 1160]
 }
 
 # UDP setup
