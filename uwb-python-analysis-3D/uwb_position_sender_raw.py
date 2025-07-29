@@ -22,8 +22,8 @@ responder_positions = {
 }
 
 BAUD_RATE = 115200
-INITIAL_DT = 0.05
-MEASUREMENT_NOISE = 20
+INITIAL_DT = 0.1
+MEASUREMENT_NOISE = 10
 PROCESS_NOISE = 0.1
 
 def find_serial_port():
@@ -130,4 +130,4 @@ if __name__ == "__main__":
                     print("Error in loop:", e)
                     time.sleep(0.1)
     except KeyboardInterrupt:
-        print("Stopped.") 
+        print("Stopped.")
