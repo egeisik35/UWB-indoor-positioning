@@ -4,19 +4,19 @@ import socket
 import json
 import time
 
-# Room dimensions (in mm)
-room_width = 7850
-room_depth = 7300
-room_height = 3200
+##Room dimensions (in cm)
+room_width = 799
+room_depth = 840
+room_height = 320
 
-# Anchor positions (exactly as in 3D)
+# Anchor positions (in cm)
 responder_positions = {
-    "0x0001": [3000, 0, 1200],
-    "0x0002": [0, 4000, 1050],
-    "0x0003": [6850, 4400, 1200]
+    "0x0001": [295, 0, 204],
+    "0x0002": [155, 390, 74],
+    "0x0003": [680, 495, 120]
 }
 
-# UDP setup
+#UDP setup
 UDP_IP = "0.0.0.0"
 UDP_PORT = 5005
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -39,24 +39,24 @@ def update_plot(est):
     ax_xy.set_xlim(0, room_width)
     ax_xy.set_ylim(0, room_depth)
     ax_xy.set_title("Top-Down View (X-Y)")
-    ax_xy.set_xlabel("X (mm)")
-    ax_xy.set_ylabel("Y (mm)")
+    ax_xy.set_xlabel("X (cm)")
+    ax_xy.set_ylabel("Y (cm)")
     ax_xy.grid(True)
 
     for addr, pos in responder_positions.items():
         ax_xy.plot(pos[0], pos[1], 'ro')
-        ax_xy.text(pos[0] + 50, pos[1] + 50, addr, fontsize=8)
+        ax_xy.text(pos[0] + 5, pos[1] + 5, addr, fontsize=8)
 
-    ax_xy.plot(est[0], est[1], 'go', markersize=10)
-    ax_xy.text(est[0] + 100, est[1], "Estimated", fontsize=9)
+    ax_xy.plot(est[0]/10, est[1]/10, 'go', markersize=10)
+    ax_xy.text(est[0]/10 + 10, est[1]/10, "Estimated", fontsize=9)
 
     # Z-height bar
     ax_z.set_ylim(0, room_height)
     ax_z.set_xlim(0, 1)
-    ax_z.bar(0.5, est[2], width=0.4, color='green')
+    ax_z.bar(0.5, est[2]/10, width=0.4, color='green')
     ax_z.set_xticks([])
-    ax_z.set_title("Z height (mm)")
-    ax_z.text(0.5, est[2] + 100, f"{int(est[2])} mm", ha='center', fontsize=9)
+    ax_z.set_title("Z height (cm)")
+    ax_z.text(0.5, est[2]/10 + 5, f"{int(est[2]/10)} cm", ha='center', fontsize=9)
     ax_z.grid(True)
 
     plt.pause(0.05)
@@ -70,7 +70,7 @@ try:
             est = [position['x'], position['y'], position['z']]
             last_position = est
             last_update = time.time()
-            print(f"Received position: x={est[0]:.1f}, y={est[1]:.1f}, z={est[2]:.1f} mm")
+            print(f"Received position: x={est[0]/10:.1f} cm, y={est[1]/10:.1f} cm, z={est[2]/10:.1f} cm")
             update_plot(est)
         except socket.timeout:
             # If no new data, re-plot last position for smoothness
@@ -81,4 +81,3 @@ try:
                 time.sleep(0.05)
 except KeyboardInterrupt:
     print("Stopped.")
-

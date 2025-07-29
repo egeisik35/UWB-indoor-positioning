@@ -41,6 +41,7 @@ def update_plot(est):
     ax_xy.set_title("Top-Down View (X-Y)")
     ax_xy.set_xlabel("X (mm)")
     ax_xy.set_ylabel("Y (mm)")
+    ax_xy.grid(True)
 
     for addr, pos in responder_positions.items():
         ax_xy.plot(pos[0], pos[1], 'ro')
@@ -56,6 +57,7 @@ def update_plot(est):
     ax_z.set_xticks([])
     ax_z.set_title("Z height (mm)")
     ax_z.text(0.5, est[2] + 100, f"{int(est[2])} mm", ha='center', fontsize=9)
+    ax_z.grid(True)
 
     plt.pause(0.05)
 

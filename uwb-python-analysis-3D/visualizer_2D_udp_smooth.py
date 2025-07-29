@@ -9,10 +9,10 @@ room_width = 7850
 room_depth = 7300
 room_height = 3200
 
-# Anchor positions (exactly as in 3D)
+# Anchor positions (in mm)
 responder_positions = {
-    "0x0001": [3000, 0, 1200],
-    "0x0002": [0, 4000, 1050],
+    "0x0001": [4900, 0, 2400],
+    "0x0002": [0, 4000, 120],
     "0x0003": [6850, 4400, 1200]
 }
 
@@ -21,7 +21,7 @@ UDP_IP = "0.0.0.0"
 UDP_PORT = 5005
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, UDP_PORT))
-sock.settimeout(1.0)
+sock.settimeout(0.01)
 
 # === Plot Setup ===
 fig = plt.figure(figsize=(10, 5))
@@ -30,6 +30,13 @@ ax_z = fig.add_subplot(1, 20, 20)
 
 last_position = None
 last_update = time.time()
+current_position = None
+
+# Interpolation settings
+interp_steps = 10  # Number of frames to interpolate between positions
+interp_counter = 0
+interp_start = None
+interp_end = None
 
 def update_plot(est):
     ax_xy.clear()
@@ -59,26 +66,39 @@ def update_plot(est):
     ax_z.text(0.5, est[2] + 100, f"{int(est[2])} mm", ha='center', fontsize=9)
     ax_z.grid(True)
 
-    plt.pause(0.05)
+    plt.pause(0.01)
 
-# === Main Loop ===
 try:
     while True:
+        got_new = False
         try:
             data, addr = sock.recvfrom(1024)
             position = json.loads(data.decode())
-            est = [position['x'], position['y'], position['z']]
-            last_position = est
-            last_update = time.time()
-            print(f"Received position: x={est[0]:.1f}, y={est[1]:.1f}, z={est[2]:.1f} mm")
-            update_plot(est)
-        except socket.timeout:
-            # If no new data, re-plot last position for smoothness
-            if last_position is not None and time.time() - last_update < 2.0:
-                update_plot(last_position)
+            new_position = np.array([position['x'], position['y'], position['z']])
+            print(f"Received position: x={new_position[0]:.1f} mm, y={new_position[1]:.1f} mm, z={new_position[2]:.1f} mm")
+            if current_position is None:
+                current_position = new_position
+                interp_start = new_position
+                interp_end = new_position
+                interp_counter = 0
             else:
-                print("Waiting for position data...")
-                time.sleep(0.05)
+                interp_start = current_position
+                interp_end = new_position
+                interp_counter = 0
+            got_new = True
+        except socket.timeout:
+            pass
+
+        # Interpolate if we have a new target
+        if interp_start is not None and interp_end is not None:
+            t = min(interp_counter / interp_steps, 1.0)
+            interp_pos = (1 - t) * interp_start + t * interp_end
+            update_plot(interp_pos)
+            current_position = interp_pos
+            if t < 1.0:
+                interp_counter += 1
+        else:
+            # No data yet, just wait
+            time.sleep(0.01)
 except KeyboardInterrupt:
     print("Stopped.")
-

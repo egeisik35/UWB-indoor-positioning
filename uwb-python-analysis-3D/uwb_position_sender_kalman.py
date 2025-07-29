@@ -43,21 +43,24 @@ def create_kalman_filter():
     kf.Q = Q_discrete_white_noise(dim=2, dt=INITIAL_DT, var=PROCESS_NOISE)
     return kf
 
-def trilaterate_2d(p1, r1, p2, r2, p3, r3):
-    # 2D trilateration (ignore z)
-    P1 = np.array(p1[:2])
-    P2 = np.array(p2[:2])
-    P3 = np.array(p3[:2])
+def trilaterate(p1, r1, p2, r2, p3, r3):
+    P1 = np.array(p1)
+    P2 = np.array(p2)
+    P3 = np.array(p3)
     ex = (P2 - P1) / np.linalg.norm(P2 - P1)
     i = np.dot(ex, P3 - P1)
     ey = P3 - P1 - i * ex
     ey = ey / np.linalg.norm(ey)
+    ez = np.cross(ex, ey)
     d = np.linalg.norm(P2 - P1)
     j = np.dot(ey, P3 - P1)
     x = (r1**2 - r2**2 + d**2) / (2 * d)
     y = (r1**2 - r3**2 + i**2 + j**2 - 2 * i * x) / (2 * j)
-    pos2d = P1 + x * ex + y * ey
-    return pos2d
+    try:
+        z = np.sqrt(abs(r1**2 - x**2 - y**2))
+    except:
+        z = 0
+    return P1 + x * ex + y * ey + z * ez
 
 if __name__ == "__main__":
     PORT = find_serial_port()
@@ -116,13 +119,13 @@ if __name__ == "__main__":
                         d2 = all_distances["0x0002"] * 10
                         d3 = all_distances["0x0003"] * 10
 
-                        est2d = trilaterate_2d(
+                        est = trilaterate(
                             responder_positions["0x0001"], d1,
                             responder_positions["0x0002"], d2,
                             responder_positions["0x0003"], d3
                         )
 
-                        position = {"x": float(est2d[0]), "y": float(est2d[1])}
+                        position = {"x": float(est[0]), "y": float(est[1]), "z": float(est[2])}
                         sock.sendto(json.dumps(position).encode(), (UDP_IP, UDP_PORT))
                         print("Sent position:", position)
 
@@ -130,4 +133,4 @@ if __name__ == "__main__":
                     print("Error in loop:", e)
                     time.sleep(0.1)
     except KeyboardInterrupt:
-        print("Stopped.") 
+        print("Stopped.")
