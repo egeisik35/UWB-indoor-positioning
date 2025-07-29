@@ -9,9 +9,10 @@ from filterpy.common import Q_discrete_white_noise
 import socket
 
 # UDP setup
-UDP_IP = "MAIN_COMPUTER_IP"  # <-- CHANGE THIS
+UDP_IP = "255.255.255.255"
 UDP_PORT = 5005
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
 # Room anchor positions (update as needed)
 responder_positions = {
