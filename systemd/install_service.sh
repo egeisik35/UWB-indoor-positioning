@@ -37,20 +37,38 @@ if ! id "$USERNAME" &>/dev/null; then
 fi
 
 USER_HOME=$(eval echo "~$USERNAME")
-REPO_PATH="$USER_HOME/UWB-positioning-main"
+
+# Find the repository directory (more flexible)
+REPO_PATH=""
+POSSIBLE_NAMES=("UWB-positioning-main" "UWB-indoor-positioning" "uwb-positioning" "uwb-indoor-positioning")
+
+for name in "${POSSIBLE_NAMES[@]}"; do
+    if [ -d "$USER_HOME/$name" ]; then
+        REPO_PATH="$USER_HOME/$name"
+        break
+    fi
+done
+
+# If not found in common names, search for any directory with position_sender.py
+if [ -z "$REPO_PATH" ]; then
+    for dir in "$USER_HOME"/*; do
+        if [ -d "$dir" ] && [ -f "$dir/raspberrypi-files/position_sender.py" ]; then
+            REPO_PATH="$dir"
+            break
+        fi
+    done
+fi
+
+if [ -z "$REPO_PATH" ]; then
+    echo "❌ Error: Repository not found in $USER_HOME"
+    echo "   Please ensure the repository is cloned and contains raspberrypi-files/position_sender.py"
+    echo "   Common names: UWB-positioning-main, UWB-indoor-positioning, etc."
+    exit 1
+fi
 
 echo "User home directory: $USER_HOME"
 echo "Repository path: $REPO_PATH"
 echo ""
-
-# Check if repository exists
-if [ ! -d "$REPO_PATH" ]; then
-    echo "❌ Error: Repository not found at $REPO_PATH"
-    echo "   Please clone the repository first:"
-    echo "   cd $USER_HOME"
-    echo "   git clone <repository-url> UWB-positioning-main"
-    exit 1
-fi
 
 # Check if position_sender.py exists
 if [ ! -f "$REPO_PATH/raspberrypi-files/position_sender.py" ]; then
@@ -93,7 +111,11 @@ cp uwb-position-sender.service "$SERVICE_FILE"
 
 # Update the service file for this specific user
 sed -i "s/%i/$USERNAME/g" "$SERVICE_FILE"
-sed -i "s/%h/$USER_HOME/g" "$SERVICE_FILE"
+sed -i "s|%h|$USER_HOME|g" "$SERVICE_FILE"
+
+# Update the repository path in the service file
+REPO_NAME=$(basename "$REPO_PATH")
+sed -i "s|UWB-positioning-main|$REPO_NAME|g" "$SERVICE_FILE"
 
 # Handle Python path
 if [ "$USE_PYENV" = false ]; then
@@ -120,6 +142,7 @@ echo ""
 echo "✅ Service installed successfully!"
 echo ""
 echo "Service name: uwb-position-sender@$USERNAME.service"
+echo "Repository: $REPO_NAME"
 echo "Python path: $PYTHON_PATH"
 echo ""
 echo "=== Service Management Commands ==="

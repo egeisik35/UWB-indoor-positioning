@@ -7,6 +7,40 @@ This directory contains the systemd service configuration to automatically run t
 - `uwb-position-sender.service` - The systemd service configuration file
 - `install_service.sh` - Installation script to set up the service
 
+## Quick Setup (Exact Commands)
+
+Here are the **exact commands** you'll run after cloning the repo to your Raspberry Pi:
+
+### **Step 1: Clone and Navigate**
+```bash
+cd /home/romer
+git clone <your-repo-url> UWB-indoor-positioning
+cd UWB-indoor-positioning
+```
+
+### **Step 2: Install Dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+### **Step 3: Install Systemd Service**
+```bash
+cd systemd
+chmod +x install_service.sh
+sudo ./install_service.sh romer
+```
+
+### **Step 4: Test the Service**
+```bash
+sudo systemctl start uwb-position-sender@romer.service
+sudo systemctl status uwb-position-sender@romer.service
+```
+
+### **Step 5: Check Logs (Optional)**
+```bash
+sudo journalctl -u uwb-position-sender@romer.service -f
+```
+
 ## Installation
 
 ### Prerequisites
@@ -14,12 +48,12 @@ This directory contains the systemd service configuration to automatically run t
 1. Clone the repository to your Raspberry Pi:
    ```bash
    cd /home/romer
-   git clone <your-repo-url> UWB-positioning-main
+   git clone <your-repo-url> UWB-indoor-positioning
    ```
 
 2. Install Python dependencies:
    ```bash
-   cd UWB-positioning-main
+   cd UWB-indoor-positioning
    pip install -r requirements.txt  # Uses pyenv Python
    ```
 
@@ -37,7 +71,7 @@ This directory contains the systemd service configuration to automatically run t
 
 3. Run the installation script as root:
    ```bash
-   sudo ./install_service.sh
+   sudo ./install_service.sh romer
    ```
 
 The script will:
@@ -50,27 +84,27 @@ The script will:
 
 ### Start the service immediately:
 ```bash
-sudo systemctl start uwb-position-sender.service
+sudo systemctl start uwb-position-sender@romer.service
 ```
 
 ### Check service status:
 ```bash
-sudo systemctl status uwb-position-sender.service
+sudo systemctl status uwb-position-sender@romer.service
 ```
 
 ### View real-time logs:
 ```bash
-sudo journalctl -u uwb-position-sender.service -f
+sudo journalctl -u uwb-position-sender@romer.service -f
 ```
 
 ### Stop the service:
 ```bash
-sudo systemctl stop uwb-position-sender.service
+sudo systemctl stop uwb-position-sender@romer.service
 ```
 
 ### Disable auto-start (if needed):
 ```bash
-sudo systemctl disable uwb-position-sender.service
+sudo systemctl disable uwb-position-sender@romer.service
 ```
 
 ## Service Configuration
@@ -80,29 +114,29 @@ The service is configured to:
 - Restart automatically if it crashes
 - Run as user `romer`
 - Use pyenv Python environment (if available)
-- Use the working directory `/home/romer/UWB-positioning-main/raspberrypi-files`
+- Use the working directory `/home/romer/UWB-indoor-positioning/raspberrypi-files`
 - Log output to systemd journal
 
 ## Troubleshooting
 
 ### Check if the service is running:
 ```bash
-sudo systemctl is-active uwb-position-sender.service
+sudo systemctl is-active uwb-position-sender@romer.service
 ```
 
 ### View recent logs:
 ```bash
-sudo journalctl -u uwb-position-sender.service --since "1 hour ago"
+sudo journalctl -u uwb-position-sender@romer.service --since "1 hour ago"
 ```
 
 ### Check for errors:
 ```bash
-sudo journalctl -u uwb-position-sender.service -p err
+sudo journalctl -u uwb-position-sender@romer.service -p err
 ```
 
 ### Test the script manually:
 ```bash
-cd /home/romer/UWB-positioning-main/raspberrypi-files
+cd /home/romer/UWB-indoor-positioning/raspberrypi-files
 python position_sender.py  # Uses pyenv Python
 ```
 
