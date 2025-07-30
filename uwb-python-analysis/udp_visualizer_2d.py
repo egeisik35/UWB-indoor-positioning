@@ -35,6 +35,13 @@ PROCESS_NOISE = 0.1
 kalman_filters = {}
 last_time = {}
 
+# Sensor status tracking
+sensor_status = {
+    "0x0001": {"last_seen": 0, "color": "red"},
+    "0x0002": {"last_seen": 0, "color": "red"},
+    "0x0003": {"last_seen": 0, "color": "red"}
+}
+
 def create_kalman_filter():
     kf = KalmanFilter(dim_x=2, dim_z=1)
     kf.x = np.zeros((2, 1))
@@ -105,8 +112,23 @@ def estimate_height_2d(distances, room_dimensions):
     
     return estimated_height
 
+def update_sensor_status(distances, current_time):
+    """
+    Update sensor status based on received data
+    Green = receiving data, Red = not receiving data
+    """
+    # Mark all sensors as not seen initially
+    for sensor in sensor_status:
+        sensor_status[sensor]["color"] = "red"
+    
+    # Mark sensors that sent data as green
+    for sensor in distances:
+        if sensor in sensor_status:
+            sensor_status[sensor]["color"] = "green"
+            sensor_status[sensor]["last_seen"] = current_time
+
 # === 2D Plot Setup ===
-fig, ax = plt.subplots(figsize=(10, 8))
+fig, ax = plt.subplots(figsize=(12, 10))
 
 last_position = None
 last_update = time.time()
@@ -125,26 +147,45 @@ def update_2d_plot(est_2d, height_z):
     ax.set_xlim(0, ROOM_DIMENSIONS["width_x"])
     ax.set_ylim(0, ROOM_DIMENSIONS["depth_y"])
     
-    ax.set_title(f"2D UWB Positioning System (Height: {height_z/10:.1f}cm)")
+    ax.set_title(f"2D UWB Positioning System (Height: {height_z/10:.1f}cm)", fontsize=14, weight='bold')
     ax.set_xlabel("X (mm)")
     ax.set_ylabel("Y (mm)")
     ax.grid(True, alpha=0.3)
     
-    # Plot anchor positions
+    # Plot anchor positions with sensor icons and status colors
     for addr, pos in responder_positions_2d.items():
-        ax.scatter(pos[0], pos[1], c='red', s=200, marker='o', zorder=5)
-        ax.text(pos[0] + 100, pos[1] + 100, addr, fontsize=10, weight='bold')
+        color = sensor_status[addr]["color"]
+        # Use a sensor-like icon (filled circle with inner circle)
+        ax.scatter(pos[0], pos[1], c=color, s=400, marker='o', edgecolors='black', linewidth=2, zorder=5)
+        # Inner circle to make it look like a sensor
+        ax.scatter(pos[0], pos[1], c='white', s=200, marker='o', zorder=6)
+        ax.scatter(pos[0], pos[1], c=color, s=100, marker='o', zorder=7)
+        
+        # Add sensor label with status
+        status_text = "●" if color == "green" else "○"
+        ax.text(pos[0] + 150, pos[1] + 150, f"{addr}\n{status_text}", 
+                fontsize=10, weight='bold', ha='center')
     
-    # Plot estimated position
-    ax.scatter(est_2d[0], est_2d[1], c='green', s=300, marker='*', zorder=6)
-    ax.text(est_2d[0] + 150, est_2d[1] + 150, 
-            f"Tag\n({est_2d[0]/10:.1f}cm, {est_2d[1]/10:.1f}cm)", 
-            fontsize=10, weight='bold')
+    # Plot estimated position with tag icon
+    if est_2d is not None:
+        # Use a tag-like icon (diamond shape)
+        ax.scatter(est_2d[0], est_2d[1], c='blue', s=500, marker='D', edgecolors='black', linewidth=2, zorder=6)
+        ax.text(est_2d[0] + 200, est_2d[1] + 200, 
+                f"Tag\n({est_2d[0]/10:.1f}cm, {est_2d[1]/10:.1f}cm)", 
+                fontsize=10, weight='bold')
     
     # Add room dimensions text
     ax.text(50, ROOM_DIMENSIONS["depth_y"] - 200, 
             f"Room: {ROOM_DIMENSIONS['width_x']/10:.1f}cm x {ROOM_DIMENSIONS['depth_y']/10:.1f}cm", 
-            fontsize=8, style='italic')
+            fontsize=10, style='italic')
+    
+    # Add legend
+    legend_elements = [
+        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=15, label='Sensor Active'),
+        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=15, label='Sensor Inactive'),
+        plt.Line2D([0], [0], marker='D', color='w', markerfacecolor='blue', markersize=15, label='Tag Position')
+    ]
+    ax.legend(handles=legend_elements, loc='upper right')
     
     plt.pause(0.005)
 
@@ -152,6 +193,7 @@ try:
     print("Starting 2D UWB Visualizer...")
     print(f"Room dimensions: {ROOM_DIMENSIONS['width_x']/10:.1f}cm x {ROOM_DIMENSIONS['depth_y']/10:.1f}cm")
     print("Waiting for UDP data...")
+    print("Sensor Status: Green = Active, Red = Inactive")
     
     while True:
         got_new = False
@@ -162,6 +204,9 @@ try:
             # Extract data (simplified format from Raspberry Pi)
             distances = raw_data.get("distances", {})
             timestamp = raw_data.get("timestamp", time.time())
+            
+            # Update sensor status
+            update_sensor_status(distances, timestamp)
             
             print(f"Received 2D raw data: distances={distances}")
             
@@ -232,7 +277,8 @@ try:
             if t < 1.0:
                 interp_counter += 1
         else:
-            # No data yet, just wait
+            # No data yet, just show the plot with inactive sensors
+            update_2d_plot(None, 1600)
             time.sleep(0.005)
 except KeyboardInterrupt:
     print("Stopped.") 

@@ -37,6 +37,13 @@ PROCESS_NOISE = 0.1
 kalman_filters = {}
 last_time = {}
 
+# Sensor status tracking
+sensor_status = {
+    "0x0001": {"last_seen": 0, "color": "red"},
+    "0x0002": {"last_seen": 0, "color": "red"},
+    "0x0003": {"last_seen": 0, "color": "red"}
+}
+
 def create_kalman_filter():
     kf = KalmanFilter(dim_x=2, dim_z=1)
     kf.x = np.zeros((2, 1))
@@ -83,6 +90,21 @@ def improve_height_decision(distances, room_dimensions):
     
     return improved_height
 
+def update_sensor_status(distances, current_time):
+    """
+    Update sensor status based on received data
+    Green = receiving data, Red = not receiving data
+    """
+    # Mark all sensors as not seen initially
+    for sensor in sensor_status:
+        sensor_status[sensor]["color"] = "red"
+    
+    # Mark sensors that sent data as green
+    for sensor in distances:
+        if sensor in sensor_status:
+            sensor_status[sensor]["color"] = "green"
+            sensor_status[sensor]["last_seen"] = current_time
+
 def trilaterate_3d(p1, r1, p2, r2, p3, r3):
     """
     3D trilateration using three anchor points
@@ -119,7 +141,7 @@ def trilaterate_3d(p1, r1, p2, r2, p3, r3):
     return P1 + x * ex + y * ey + z * ez
 
 # === 3D Plot Setup ===
-fig = plt.figure(figsize=(12, 8))
+fig = plt.figure(figsize=(14, 10))
 ax_3d = fig.add_subplot(111, projection='3d')
 
 last_position = None
@@ -140,25 +162,43 @@ def update_3d_plot(est_3d):
     ax_3d.set_ylim(0, ROOM_DIMENSIONS["depth_y"])
     ax_3d.set_zlim(0, ROOM_DIMENSIONS["height_z"])
     
-    ax_3d.set_title("3D UWB Positioning System")
+    ax_3d.set_title("3D UWB Positioning System", fontsize=14, weight='bold')
     ax_3d.set_xlabel("X (mm)")
     ax_3d.set_ylabel("Y (mm)")
     ax_3d.set_zlabel("Z (mm)")
     
-    # Plot anchor positions
+    # Plot anchor positions with sensor icons and status colors
     for addr, pos in responder_positions_3d.items():
-        ax_3d.scatter(pos[0], pos[1], pos[2], c='red', s=100, marker='o')
-        ax_3d.text(pos[0] + 50, pos[1] + 50, pos[2] + 50, addr, fontsize=8)
+        color = sensor_status[addr]["color"]
+        # Use a sensor-like icon (larger sphere for 3D)
+        ax_3d.scatter(pos[0], pos[1], pos[2], c=color, s=300, marker='o', edgecolors='black', linewidth=2)
+        
+        # Add sensor label with status
+        status_text = "●" if color == "green" else "○"
+        ax_3d.text(pos[0] + 100, pos[1] + 100, pos[2] + 100, f"{addr}\n{status_text}", 
+                  fontsize=9, weight='bold')
     
-    # Plot estimated position
-    ax_3d.scatter(est_3d[0], est_3d[1], est_3d[2], c='green', s=200, marker='*')
-    ax_3d.text(est_3d[0] + 100, est_3d[1] + 100, est_3d[2] + 100, 
-                f"Tag\n({est_3d[0]/10:.1f}cm, {est_3d[1]/10:.1f}cm, {est_3d[2]/10:.1f}cm)", 
-                fontsize=9)
+    # Plot estimated position with tag icon
+    if est_3d is not None:
+        # Use a tag-like icon (diamond shape for 3D)
+        ax_3d.scatter(est_3d[0], est_3d[1], est_3d[2], c='blue', s=400, marker='D', edgecolors='black', linewidth=2)
+        ax_3d.text(est_3d[0] + 150, est_3d[1] + 150, est_3d[2] + 150, 
+                  f"Tag\n({est_3d[0]/10:.1f}cm, {est_3d[1]/10:.1f}cm, {est_3d[2]/10:.1f}cm)", 
+                  fontsize=10, weight='bold')
+    
+    # Add room dimensions text
+    ax_3d.text(50, 50, ROOM_DIMENSIONS["height_z"] - 200, 
+              f"Room: {ROOM_DIMENSIONS['width_x']/10:.1f}cm x {ROOM_DIMENSIONS['depth_y']/10:.1f}cm x {ROOM_DIMENSIONS['height_z']/10:.1f}cm", 
+              fontsize=9, style='italic')
     
     plt.pause(0.005)
 
 try:
+    print("Starting 3D UWB Visualizer...")
+    print(f"Room dimensions: {ROOM_DIMENSIONS['width_x']/10:.1f}cm x {ROOM_DIMENSIONS['depth_y']/10:.1f}cm x {ROOM_DIMENSIONS['height_z']/10:.1f}cm")
+    print("Waiting for UDP data...")
+    print("Sensor Status: Green = Active, Red = Inactive")
+    
     while True:
         got_new = False
         try:
@@ -168,6 +208,9 @@ try:
             # Extract data (simplified format)
             distances = raw_data.get("distances", {})
             timestamp = raw_data.get("timestamp", time.time())
+            
+            # Update sensor status
+            update_sensor_status(distances, timestamp)
             
             print(f"Received raw data: distances={distances}")
             
@@ -239,7 +282,8 @@ try:
             if t < 1.0:
                 interp_counter += 1
         else:
-            # No data yet, just wait
+            # No data yet, just show the plot with inactive sensors
+            update_3d_plot(None)
             time.sleep(0.005)
 except KeyboardInterrupt:
     print("Stopped.")
