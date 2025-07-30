@@ -4,8 +4,6 @@ import sys
 import time
 import numpy as np
 import serial.tools.list_ports
-from filterpy.kalman import KalmanFilter
-from filterpy.common import Q_discrete_white_noise
 import socket
 
 # UDP setup
@@ -23,8 +21,6 @@ responder_positions = {
 
 BAUD_RATE = 115200
 INITIAL_DT = 0.1
-MEASUREMENT_NOISE = 10
-PROCESS_NOISE = 0.1
 
 def find_serial_port():
     ports = serial.tools.list_ports.comports()
@@ -34,42 +30,27 @@ def find_serial_port():
             return port
     return None
 
-def create_kalman_filter():
-    kf = KalmanFilter(dim_x=2, dim_z=1)
-    kf.x = np.zeros((2, 1))
-    kf.F = np.array([[1., INITIAL_DT], [0., 1.]])
-    kf.H = np.array([[1., 0.]])
-    kf.R = np.array([[MEASUREMENT_NOISE]])
-    kf.Q = Q_discrete_white_noise(dim=2, dt=INITIAL_DT, var=PROCESS_NOISE)
-    return kf
-
-def trilaterate(p1, r1, p2, r2, p3, r3):
-    P1 = np.array(p1)
-    P2 = np.array(p2)
-    P3 = np.array(p3)
+def trilaterate_2d(p1, r1, p2, r2, p3, r3):
+    # 2D trilateration (ignore z)
+    P1 = np.array(p1[:2])
+    P2 = np.array(p2[:2])
+    P3 = np.array(p3[:2])
     ex = (P2 - P1) / np.linalg.norm(P2 - P1)
     i = np.dot(ex, P3 - P1)
     ey = P3 - P1 - i * ex
     ey = ey / np.linalg.norm(ey)
-    ez = np.cross(ex, ey)
     d = np.linalg.norm(P2 - P1)
     j = np.dot(ey, P3 - P1)
     x = (r1**2 - r2**2 + d**2) / (2 * d)
     y = (r1**2 - r3**2 + i**2 + j**2 - 2 * i * x) / (2 * j)
-    try:
-        z = np.sqrt(abs(r1**2 - x**2 - y**2))
-    except:
-        z = 0
-    return P1 + x * ex + y * ey + z * ez
+    pos2d = P1 + x * ex + y * ey
+    return pos2d
 
 if __name__ == "__main__":
     PORT = find_serial_port()
     if PORT is None:
         print("Error: No suitable serial port found.")
         sys.exit(1)
-
-    kalman_filters = {}
-    last_time = {}
 
     try:
         with serial.Serial(PORT, BAUD_RATE, timeout=1) as ser:
@@ -92,26 +73,8 @@ if __name__ == "__main__":
                         if not addr or status != "Ok" or dist is None:
                             continue
 
-                        now = time.time()
-                        if addr not in kalman_filters:
-                            kalman_filters[addr] = create_kalman_filter()
-                            kalman_filters[addr].x[0] = dist
-                            last_time[addr] = now
-                            continue
-
-                        dt = now - last_time[addr]
-                        if dt <= 0: continue
-                        last_time[addr] = now
-
-                        kf = kalman_filters[addr]
-                        kf.F[0, 1] = dt
-                        kf.Q = Q_discrete_white_noise(dim=2, dt=dt, var=PROCESS_NOISE)
-
-                        kf.predict()
-                        kf.update(np.array([[dist]]))
-
-                        filtered_dist = kf.x[0, 0]
-                        all_distances[addr] = filtered_dist
+                        # Use raw distance (no Kalman filter)
+                        all_distances[addr] = dist
 
                     # Only send if all distances are available
                     if all(k in all_distances for k in responder_positions):
@@ -119,13 +82,13 @@ if __name__ == "__main__":
                         d2 = all_distances["0x0002"] * 10
                         d3 = all_distances["0x0003"] * 10
 
-                        est = trilaterate(
+                        est2d = trilaterate_2d(
                             responder_positions["0x0001"], d1,
                             responder_positions["0x0002"], d2,
                             responder_positions["0x0003"], d3
                         )
 
-                        position = {"x": float(est[0]), "y": float(est[1]), "z": float(est[2])}
+                        position = {"x": float(est2d[0]), "y": float(est2d[1])}
                         sock.sendto(json.dumps(position).encode(), (UDP_IP, UDP_PORT))
                         print("Sent position:", position)
 
@@ -133,4 +96,4 @@ if __name__ == "__main__":
                     print("Error in loop:", e)
                     time.sleep(0.1)
     except KeyboardInterrupt:
-        print("Stopped.") 
+        print("Stopped.")
