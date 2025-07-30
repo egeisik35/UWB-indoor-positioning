@@ -4,9 +4,6 @@ numpy>=1.21.0
 filterpy>=1.4.5
 matplotlib>=3.5.0
 
-# Additional dependencies for 3D visualization
-mpl_toolkits  # Included with matplotlib
-
 # Optional dependencies for advanced features
 scipy>=1.7.0  # For advanced filtering and optimization
 pandas>=1.3.0  # For data analysis and logging
