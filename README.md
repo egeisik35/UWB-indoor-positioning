@@ -45,7 +45,6 @@ The system uses one module as a mobile **initiator** (the "tag" to be tracked) a
     "0x0002": 2345,  // mm
     "0x0003": 3456   // mm
   },
-  "height_z_mm": 1200,  // mm
   "timestamp": 1234567890.123
 }
 ```
@@ -173,21 +172,21 @@ To automatically start the position sender when the Raspberry Pi boots up:
 
 1. **Clone the repository** to your Raspberry Pi:
    ```bash
-   cd /home/romer
-   git clone <your-repo-url> UWB-positioning-main
+   cd ~
+   git clone <your-repo-url> UWB-indoor-positioning
    ```
 
 2. **Install dependencies**:
    ```bash
-   cd UWB-positioning-main
-   pip3 install -r requirements.txt
+   cd UWB-indoor-positioning
+   pip install -r requirements.txt
    ```
 
 3. **Install the systemd service**:
    ```bash
    cd systemd
    chmod +x install_service.sh
-   sudo ./install_service.sh
+   sudo ./install_service.sh $USER
    ```
 
 The service will now automatically start when the Raspberry Pi boots up. See `systemd/README.md` for detailed service management instructions.

@@ -46,13 +46,13 @@ def create_kalman_filter():
     kf.Q = Q_discrete_white_noise(dim=2, dt=INITIAL_DT, var=PROCESS_NOISE)
     return kf
 
-def improve_height_decision(distances, height_z_from_pi, room_dimensions):
+def improve_height_decision(distances, room_dimensions):
     """
     Improve height decision using room dimensions and anchor positions
     This runs on the computer side with full room context
     """
     if not distances or len(distances) < 2:
-        return height_z_from_pi
+        return 1600  # Default height in mm
     
     # Calculate average distance to anchors
     avg_distance = sum(distances.values()) / len(distances)
@@ -68,18 +68,18 @@ def improve_height_decision(distances, height_z_from_pi, room_dimensions):
     # Use distance ratio and room context to improve height estimate
     if distance_ratio > 0.7:
         # Far from anchors, likely higher up
-        improved_height = min(room_dimensions["height_z"] * 0.8, height_z_from_pi + 200)
+        improved_height = min(room_dimensions["height_z"] * 0.8, 2800)
     elif distance_ratio < 0.3:
         # Close to anchors, likely lower down
-        improved_height = max(room_dimensions["height_z"] * 0.2, height_z_from_pi - 200)
+        improved_height = max(room_dimensions["height_z"] * 0.2, 800)
     else:
-        # Middle range, use PI estimate with slight adjustment
-        improved_height = height_z_from_pi
+        # Middle range, use default
+        improved_height = 1600
     
     # Ensure height is within room bounds
     improved_height = max(100, min(room_dimensions["height_z"] - 100, improved_height))
     
-    print(f"Height improvement: PI={height_z_from_pi}mm, Computer={improved_height}mm, ratio={distance_ratio:.2f}")
+    print(f"Height improvement: Computer={improved_height}mm, ratio={distance_ratio:.2f}")
     
     return improved_height
 
@@ -167,10 +167,9 @@ try:
             
             # Extract data (simplified format)
             distances = raw_data.get("distances", {})
-            height_z_from_pi = raw_data.get("height_z_mm", 1200)
             timestamp = raw_data.get("timestamp", time.time())
             
-            print(f"Received raw data: distances={distances}, height_z={height_z_from_pi}mm")
+            print(f"Received raw data: distances={distances}")
             
             # Apply Kalman filtering to distances
             filtered_distances = {}
@@ -211,7 +210,7 @@ try:
                 )
                 
                 # Improve height decision using room context
-                improved_height = improve_height_decision(filtered_distances, height_z_from_pi, ROOM_DIMENSIONS)
+                improved_height = improve_height_decision(filtered_distances, ROOM_DIMENSIONS)
                 est_3d[2] = improved_height
                 
                 new_position_3d = np.array([est_3d[0], est_3d[1], est_3d[2]])

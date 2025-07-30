@@ -9,11 +9,11 @@ This directory contains the systemd service configuration to automatically run t
 
 ## Quick Setup (Exact Commands)
 
-Here are the **exact commands** you'll run after cloning the repo to your Raspberry Pi:
+Here are the commands you'll run after cloning the repo to your Raspberry Pi:
 
 ### **Step 1: Clone and Navigate**
 ```bash
-cd /home/romer
+cd ~
 git clone <your-repo-url> UWB-indoor-positioning
 cd UWB-indoor-positioning
 ```
@@ -27,18 +27,18 @@ pip install -r requirements.txt
 ```bash
 cd systemd
 chmod +x install_service.sh
-sudo ./install_service.sh romer
+sudo ./install_service.sh $USER
 ```
 
 ### **Step 4: Test the Service**
 ```bash
-sudo systemctl start uwb-position-sender@romer.service
-sudo systemctl status uwb-position-sender@romer.service
+sudo systemctl start uwb-position-sender@$USER.service
+sudo systemctl status uwb-position-sender@$USER.service
 ```
 
 ### **Step 5: Check Logs (Optional)**
 ```bash
-sudo journalctl -u uwb-position-sender@romer.service -f
+sudo journalctl -u uwb-position-sender@$USER.service -f
 ```
 
 ## Installation
@@ -47,7 +47,7 @@ sudo journalctl -u uwb-position-sender@romer.service -f
 
 1. Clone the repository to your Raspberry Pi:
    ```bash
-   cd /home/romer
+   cd ~
    git clone <your-repo-url> UWB-indoor-positioning
    ```
 
@@ -71,12 +71,12 @@ sudo journalctl -u uwb-position-sender@romer.service -f
 
 3. Run the installation script as root:
    ```bash
-   sudo ./install_service.sh romer
+   sudo ./install_service.sh $USER
    ```
 
 The script will:
 - Copy the service file to `/etc/systemd/system/`
-- Update the paths for your user (`romer`)
+- Update the paths for your user
 - Enable the service to start on boot
 - Reload systemd to recognize the new service
 
@@ -84,27 +84,27 @@ The script will:
 
 ### Start the service immediately:
 ```bash
-sudo systemctl start uwb-position-sender@romer.service
+sudo systemctl start uwb-position-sender@$USER.service
 ```
 
 ### Check service status:
 ```bash
-sudo systemctl status uwb-position-sender@romer.service
+sudo systemctl status uwb-position-sender@$USER.service
 ```
 
 ### View real-time logs:
 ```bash
-sudo journalctl -u uwb-position-sender@romer.service -f
+sudo journalctl -u uwb-position-sender@$USER.service -f
 ```
 
 ### Stop the service:
 ```bash
-sudo systemctl stop uwb-position-sender@romer.service
+sudo systemctl stop uwb-position-sender@$USER.service
 ```
 
 ### Disable auto-start (if needed):
 ```bash
-sudo systemctl disable uwb-position-sender@romer.service
+sudo systemctl disable uwb-position-sender@$USER.service
 ```
 
 ## Service Configuration
@@ -112,31 +112,31 @@ sudo systemctl disable uwb-position-sender@romer.service
 The service is configured to:
 - Start after network is available
 - Restart automatically if it crashes
-- Run as user `romer`
+- Run as the current user
 - Use pyenv Python environment (if available)
-- Use the working directory `/home/romer/UWB-indoor-positioning/raspberrypi-files`
+- Use the working directory `~/UWB-indoor-positioning/raspberrypi-files`
 - Log output to systemd journal
 
 ## Troubleshooting
 
 ### Check if the service is running:
 ```bash
-sudo systemctl is-active uwb-position-sender@romer.service
+sudo systemctl is-active uwb-position-sender@$USER.service
 ```
 
 ### View recent logs:
 ```bash
-sudo journalctl -u uwb-position-sender@romer.service --since "1 hour ago"
+sudo journalctl -u uwb-position-sender@$USER.service --since "1 hour ago"
 ```
 
 ### Check for errors:
 ```bash
-sudo journalctl -u uwb-position-sender@romer.service -p err
+sudo journalctl -u uwb-position-sender@$USER.service -p err
 ```
 
 ### Test the script manually:
 ```bash
-cd /home/romer/UWB-indoor-positioning/raspberrypi-files
+cd ~/UWB-indoor-positioning/raspberrypi-files
 python position_sender.py  # Uses pyenv Python
 ```
 
@@ -145,4 +145,5 @@ python position_sender.py  # Uses pyenv Python
 - The service will automatically restart if it crashes
 - Logs are available through `journalctl`
 - The service waits for network connectivity before starting
-- Make sure your UWB device is connected via USB before the service starts 
+- Make sure your UWB device is connected via USB before the service starts
+- Replace `$USER` with your actual username if needed 

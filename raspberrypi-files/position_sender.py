@@ -13,14 +13,6 @@ sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
 BAUD_RATE = 115200
 
-# Height decision algorithm parameters
-HEIGHT_DECISION = {
-    "min_height_z": 500,      # mm - minimum reasonable height (0.5m)
-    "max_height_z": 2800,     # mm - maximum reasonable height (2.8m, below room height)
-    "default_height_z": 1600,  # mm - default height (1.6m, typical human height)
-    "confidence_threshold": 0.7 # confidence threshold for height decisions
-}
-
 def find_serial_port():
     ports = serial.tools.list_ports.comports()
     for port, desc, hwid in sorted(ports):
@@ -28,38 +20,6 @@ def find_serial_port():
             print(f"Found suitable port: {port}")
             return port
     return None
-
-def decide_height_z(distances, height_params):
-    """
-    Decision algorithm for choosing reasonable height_z value based on:
-    - Distance measurements
-    - Physical constraints
-    - Historical patterns
-    """
-    if not distances or len(distances) < 2:
-        return height_params["default_height_z"]
-    
-    # Calculate average distance to anchors
-    avg_distance = sum(distances.values()) / len(distances)
-    
-    # Simple height estimation based on average distance
-    # If distances are very large, likely higher up
-    # If distances are small, likely lower down
-    if avg_distance > 5000:  # mm - far from anchors
-        estimated_height = height_params["max_height_z"]
-    elif avg_distance < 2000:  # mm - close to anchors
-        estimated_height = height_params["min_height_z"]
-    else:
-        # Middle range, use default
-        estimated_height = height_params["default_height_z"]
-    
-    # Ensure height is within reasonable bounds
-    estimated_height = max(height_params["min_height_z"], 
-                          min(height_params["max_height_z"], estimated_height))
-    
-    print(f"Height decision: avg_dist={avg_distance:.1f}mm, height_z={estimated_height:.1f}mm")
-    
-    return estimated_height
 
 if __name__ == "__main__":
     PORT = find_serial_port()
@@ -70,7 +30,7 @@ if __name__ == "__main__":
     try:
         with serial.Serial(PORT, BAUD_RATE, timeout=1) as ser:
             print(f"Connected to {PORT}")
-            print(f"Height decision params: {HEIGHT_DECISION}")
+            print("Sending raw distance data only - height processing on computer side")
             
             while True:
                 try:
@@ -94,18 +54,14 @@ if __name__ == "__main__":
 
                     # Send raw distance data if we have measurements
                     if raw_distances:
-                        # Decide on height_z using the decision algorithm
-                        height_z = decide_height_z(raw_distances, HEIGHT_DECISION)
-                        
                         # Create simplified data structure with only essential data
                         raw_data = {
                             "distances": raw_distances,
-                            "height_z_mm": height_z,
                             "timestamp": time.time()
                         }
                         
                         sock.sendto(json.dumps(raw_data).encode(), (UDP_IP, UDP_PORT))
-                        print("Sent raw data:", raw_data)
+                        print("Sent raw distances:", raw_distances)
 
                 except Exception as e:
                     print("Error in loop:", e)

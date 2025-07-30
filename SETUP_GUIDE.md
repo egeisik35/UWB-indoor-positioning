@@ -68,8 +68,8 @@ python3 --version
 cd ~
 
 # Clone the repository
-git clone https://github.com/your-username/UWB-positioning-main.git
-cd UWB-positioning-main
+git clone https://github.com/your-username/UWB-indoor-positioning.git
+cd UWB-indoor-positioning
 ```
 
 ### 3.2 Install Python Dependencies
@@ -131,8 +131,8 @@ cd systemd
 # Make install script executable
 chmod +x install_service.sh
 
-# Install the service (replace 'pi' with your username)
-sudo ./install_service.sh pi
+# Install the service (uses current user automatically)
+sudo ./install_service.sh $USER
 ```
 
 ### 6.2 Verify Installation
