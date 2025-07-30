@@ -9,16 +9,16 @@ from filterpy.common import Q_discrete_white_noise
 
 # Room dimensions in mm (x, y, z) - configured on computer side
 ROOM_DIMENSIONS = {
-    "width_x": 7850,    # mm (x-axis)
-    "depth_y": 7300,    # mm (y-axis) 
-    "height_z": 3000    # mm (z-axis)
+    "width_x": 8428,    # mm (x-axis) - 8.428m
+    "depth_y": 7822,    # mm (y-axis) - 7.822m
+    "height_z": 3200    # mm (z-axis) - 3.2m
 }
 
 # Anchor positions in mm (x, y, z) - 3D coordinates
 responder_positions_3d = {
-    "0x0001": [3000, 0, 1200],      # mm (x, y, z)
-    "0x0002": [0, 4000, 1050],      # mm (x, y, z)
-    "0x0003": [6850, 4400, 1200]    # mm (x, y, z)
+    "0x0001": [2968, 0, 2040],      # mm (x, y, z) - (2.968, 0, 2.04) m
+    "0x0002": [0, 4007, 2250],      # mm (x, y, z) - (0, 4.007, 2.25) m
+    "0x0003": [4432, 7375, 1800]    # mm (x, y, z) - (4.432, 7.375, 1.80) m
 }
 
 # UDP setup

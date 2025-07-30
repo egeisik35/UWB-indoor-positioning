@@ -15,9 +15,9 @@ BAUD_RATE = 115200
 
 # Height decision algorithm parameters
 HEIGHT_DECISION = {
-    "min_height_z": 500,      # mm - minimum reasonable height
-    "max_height_z": 2500,     # mm - maximum reasonable height
-    "default_height_z": 1200,  # mm - default height if no good estimate
+    "min_height_z": 500,      # mm - minimum reasonable height (0.5m)
+    "max_height_z": 2800,     # mm - maximum reasonable height (2.8m, below room height)
+    "default_height_z": 1600,  # mm - default height (1.6m, typical human height)
     "confidence_threshold": 0.7 # confidence threshold for height decisions
 }
 
