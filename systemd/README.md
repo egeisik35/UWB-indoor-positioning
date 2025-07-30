@@ -140,6 +140,37 @@ cd ~/UWB-indoor-positioning/raspberrypi-files
 python position_sender.py  # Uses pyenv Python
 ```
 
+## Common Issues
+
+### **UDP Port Already in Use**
+If you get `OSError: [Errno 98] Address already in use` when running visualizers:
+
+**Find and kill the process:**
+```bash
+# Find what's using port 5005
+sudo netstat -tulpn | grep 5005
+sudo lsof -i :5005
+
+# Kill the process
+sudo fuser -k 5005/udp
+```
+
+**Or use a different port:**
+Edit both `raspberrypi-files/position_sender.py` and visualizer files:
+```python
+UDP_PORT = 5006  # Change from 5005 to 5006
+```
+
+### **Service Won't Start**
+```bash
+# Check detailed logs
+sudo journalctl -u uwb-position-sender@$USER.service -n 50
+
+# Test manually first
+cd ~/UWB-indoor-positioning/raspberrypi-files
+python position_sender.py
+```
+
 ## Notes
 
 - The service will automatically restart if it crashes

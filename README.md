@@ -164,6 +164,71 @@ responder_positions_3d = {
 
 Both devices must be on the same WiFi network for UDP communication.
 
+## Troubleshooting
+
+### Common Issues
+
+#### **1. UDP Port Already in Use**
+If you get `OSError: [Errno 98] Address already in use` when running the visualizer:
+
+**Find the process using the port:**
+```bash
+sudo fuser -k 5005/udp
+```
+
+**Or find the specific process:**
+```bash
+sudo netstat -tulpn | grep 5005
+sudo lsof -i :5005
+```
+
+**Kill the process:**
+```bash
+# If you know the process ID (PID)
+sudo kill -9 <PID>
+
+# Or kill all processes on that port
+sudo fuser -k 5005/udp
+```
+
+**Alternative: Use a different port**
+Edit both `raspberrypi-files/position_sender.py` and `uwb-python-analysis/udp_visualizer_2d.py`:
+```python
+UDP_PORT = 5006  # Change from 5005 to 5006
+```
+
+#### **2. Service Won't Start**
+```bash
+# Check logs for errors
+sudo journalctl -u uwb-position-sender@$USER.service -n 50
+
+# Test script manually
+cd ~/UWB-indoor-positioning/raspberrypi-files
+python position_sender.py
+```
+
+#### **3. No UWB Device Found**
+```bash
+# Check USB devices
+lsusb
+
+# Check serial ports
+ls /dev/tty*
+
+# Check permissions
+sudo usermod -a -G dialout $USER
+```
+
+#### **4. Network Issues**
+```bash
+# Check if devices are on same network
+ip addr show
+
+# Test UDP connectivity
+nc -u -l 5005  # On computer
+nc -u computer-ip 5005  # On Raspberry Pi
+```
+
 ---
 
 ## Automatic Startup (Raspberry Pi)
