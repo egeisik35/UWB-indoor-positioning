@@ -1,0 +1,18 @@
+# Core dependencies for UWB positioning system
+pyserial>=3.5
+numpy>=1.21.0
+filterpy>=1.4.5
+matplotlib>=3.5.0
+
+# Additional dependencies for 3D visualization
+mpl_toolkits  # Included with matplotlib
+
+# Optional dependencies for advanced features
+scipy>=1.7.0  # For advanced filtering and optimization
+pandas>=1.3.0  # For data analysis and logging
+seaborn>=0.11.0  # For enhanced plotting
+
+# Development dependencies
+pytest>=6.0  # For testing
+black>=21.0  # For code formatting
+flake8>=3.8  # For linting 

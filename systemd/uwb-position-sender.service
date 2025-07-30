@@ -1,0 +1,24 @@
+[Unit]
+Description=UWB Position Sender Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=%i
+Group=%i
+WorkingDirectory=%h/UWB-positioning-main/raspberrypi-files
+ExecStart=%h/.pyenv/shims/python %h/UWB-positioning-main/raspberrypi-files/position_sender.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+Environment=PYENV_ROOT=%h/.pyenv
+Environment=PATH=%h/.pyenv/shims:%h/.pyenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Give the service time to start up
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target 
